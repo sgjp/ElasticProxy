@@ -23,14 +23,16 @@ func startClient(channel chan *coap.Message ) *coap.Message{
 		}else{
 			//TODO Avoid getting the same resource as the requester
 			resource := getResourceByName(m.Option(coap.ProxyURI).(string))
-			log.Printf("Sending")
-			sendCoapMsg(resource.Path,resource.Host,string(m.Payload),m.Code,m.Type)
-			log.Printf("SENT")
-			//cacheEntry := genNewCacheEntry(req, rv, resource.Host, resource.Path)
+			if resource.Id==0{
+				log.Fatalf("No available resources found for path: %v. Finishing",m.Option(coap.ProxyURI).(string))
+			}
 
-			//addEntry(cacheEntry)
+			_, success:=sendCoapMsg(resource.Path,resource.Host,string(m.Payload),m.Code,m.Type,m.MessageID,m.Token)
 
-			//return rv
+			if !success{
+				removeResource(resource)
+				channel <- m
+			}
 		}
 
 	}
@@ -39,11 +41,12 @@ func startClient(channel chan *coap.Message ) *coap.Message{
 
 }
 
-func sendCoapMsg(path string, host string, payload string, coapCode coap.COAPCode, coapType coap.COAPType) *coap.Message{
+func sendCoapMsg(path string, host string, payload string, coapCode coap.COAPCode, coapType coap.COAPType, messageId uint16, token []byte) (*coap.Message, bool){
 	req := coap.Message{
 		Type:      coapType,
 		Code:      coapCode,
-		MessageID: GenerateMessageID(),
+		MessageID: messageId,
+		Token:     token,
 		Payload:   []byte(payload),
 	}
 
@@ -58,12 +61,14 @@ func sendCoapMsg(path string, host string, payload string, coapCode coap.COAPCod
 
 	rv, err := c.Send(req)
 	if err != nil {
-		log.Fatalf("Error sending request: %v", err)
+		//log.Fatalf("Error sending request: %v", err)
+		log.Printf("Error calling resource: %v",err)
+		return rv, false
 	}
 
 	if rv != nil {
 		//log.Printf("Response payload: %s", rv.Payload)
 	}
-	return rv
+	return rv, true
 }
 

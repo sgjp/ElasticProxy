@@ -1,1 +1,1 @@
-{"Resources":[{"Id":1,"Host":"localhost:5685","Path":"calcPrimeNumber"},{"Id":3,"Host":"localhost:5684","Path":"calcPrimeNumberResult"},{"Id":2,"Host":"localhost:5686","Path":"calcPrimeNumber"}]}
+{"Resources":[{"Id":1,"Host":"localhost:5685","Path":"calcPrimeNumber"},{"Id":2,"Host":"localhost:5686","Path":"calcPrimeNumber"},{"Id":3,"Host":"localhost:5684","Path":"calcPrimeNumberResult"}]}

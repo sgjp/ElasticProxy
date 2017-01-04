@@ -14,7 +14,7 @@ func startServer(cIn chan *coap.Message) {
 
 	log.Fatal(coap.ListenAndServeMulticast("udp", "224.0.1.187:5683",
 		coap.FuncHandler(func(l *net.UDPConn, a *net.UDPAddr, m *coap.Message) *coap.Message {
-			log.Printf("Got message path=%q: PayLoad: %#v from %v proxy-uri: %v", m.Path(), string(m.Payload), a, m.Option(coap.ProxyURI))
+			log.Printf("Got message path=%q: PayLoad: %#v from %v proxy-uri: %v. Code: %v", m.Path(), string(m.Payload), a, m.Option(coap.ProxyURI),m.Code)
 			if len(m.Path()) > 0 {
 
 				switch m.Path()[0] {
@@ -57,18 +57,75 @@ func notFoundHandler(m *coap.Message) *coap.Message {
 
 
 func fwdHandler(m *coap.Message, cIn chan *coap.Message) *coap.Message{
-	res := &coap.Message{
-		Type:      coap.Acknowledgement,
-		Code:      coap.Valid,
-		MessageID: GenerateMessageID(),
-		Token:     m.Token,
-		Payload:   []byte("2.05"),
-	}
-	//log.Printf("WRITING TO CHANNEL")
-	cIn<-m
-	//log.Printf("WROTE, SIZE: %v",len(cIn))
 
-	return res
+	if m.Code==coap.GET{
+		entry, cached := getEntry(m)
+
+		//Valid is non chacheable, here we use it to not cache the response of calling calcPrimeNumberResult
+		if cached {
+			//log.Printf("CACHED !")
+			res := &coap.Message{
+				Type:                coap.Acknowledgement,
+				Code:                coap.Content,
+				MessageID:           m.MessageID,
+				Token:               m.Token,
+				Payload:             []byte(entry.ResponsePayload),
+			}
+			res.SetOption(coap.MaxAge, 60)
+			res.SetOption(coap.ContentFormat, coap.TextPlain)
+
+			return res
+		}else{
+			res := &coap.Message{
+				Type:      coap.Acknowledgement,
+				Code:      coap.Valid,
+				MessageID: GenerateMessageID(),
+				Token:     m.Token,
+				Payload:   []byte("2.05"),
+			}
+			addOriginalRequest(m)
+			cIn<-m
+
+			return res
+		}
+
+	}else if m.Code == coap.PUT{
+		//If the code is PUT, the request is a response to another request
+		originalRequest, exists:=getOriginalRequest(m)
+		if exists{
+			//The response belongs to a request, must be cached
+			cacheEntry := genNewCacheEntry(originalRequest,m,originalRequest.Option(coap.ProxyURI).(string))
+			addEntry(cacheEntry)
+		}else{
+			log.Printf("-----ENTRY NOT ADDED----")
+		}
+
+		res := &coap.Message{
+			Type:      coap.Acknowledgement,
+			Code:      coap.Content,
+			MessageID: GenerateMessageID(),
+			Token:     m.Token,
+			Payload:   []byte("2.05"),
+		}
+
+
+		cIn<-m
+		return res
+
+	}else{
+		//Its not GET or PUT, respond and forward
+		res := &coap.Message{
+			Type:      coap.Acknowledgement,
+			Code:      coap.Content,
+			MessageID: GenerateMessageID(),
+			Token:     m.Token,
+			Payload:   []byte("2.05"),
+		}
+
+		cIn<-m
+		return res
+	}
+
 }
 
 

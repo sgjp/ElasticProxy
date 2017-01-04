@@ -141,6 +141,17 @@ func getResourceByName(resourceName string) Resource {
 	return resource
 }
 
+func removeResource (resource Resource){
+
+	for k,res := range Conf.Resources{
+		if res == resource{
+			log.Printf("DELETING RESOURCE: %v", resource)
+			Conf.Resources = append(Conf.Resources[:k], Conf.Resources[k+1:]...)
+		}
+
+	}
+}
+
 
 
 func saveTaskDuration(elapsed time.Duration, resource Resource){
