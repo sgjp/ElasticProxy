@@ -4,6 +4,7 @@ import(
 	"github.com/sgjp/go-coap"
 	"time"
 	"sync"
+	"log"
 )
 
 
@@ -15,7 +16,7 @@ var mutex = &sync.Mutex{}
 
 func addEntry(cacheEntry CacheEntry){
 	cache = append(cache,cacheEntry)
-	//log.Printf("ENTRY ADDED! REQ PY: %v, RESP PY: %v, new LEN: %v, PATH: %v",string(cacheEntry.RequestPayload),string(cacheEntry.ResponsePayload),len(cache),cacheEntry.RequestPath)
+	log.Printf("ENTRY ADDED! REQ PY: %v, RESP PY: %v, new LEN: %v, PATH: %v",string(cacheEntry.RequestPayload),string(cacheEntry.ResponsePayload),len(cache),cacheEntry.RequestPath)
 
 }
 
@@ -27,13 +28,13 @@ func getEntry(req *coap.Message) (CacheEntry, bool){
 		//log.Printf("CODES: %v, %v, %v",entry.RequestCode ,req.Code,entry.RequestCode == req.Code)
 		if entry.RequestPath == req.Option(coap.ProxyURI) && entry.RequestCode == req.Code && entry.RequestType == req.Type && entry.RequestPayload == string(req.Payload){
 			//log.Printf("Matches !")
-			maxLiveDuration := entry.ResponseMaxLive.(uint32)
-			t := time.Now()
-			maxLive := time.Minute * time.Duration(maxLiveDuration)
-			if t.Before(entry.Timestamp.Add(maxLive)){
+			//maxLiveDuration := entry.ResponseMaxLive.(uint32)
+			//t := time.Now()
+			//maxLive := time.Minute * time.Duration(maxLiveDuration)
+			//if t.Before(entry.Timestamp.Add(maxLive)){
 				cacheEntry = entry
 				return cacheEntry, true
-			}
+			//}
 
 		}
 	}

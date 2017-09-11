@@ -63,7 +63,7 @@ func fwdHandler(m *coap.Message, cIn chan *coap.Message) *coap.Message{
 
 		//Valid is non chacheable, here we use it to not cache the response of calling calcPrimeNumberResult
 		if cached {
-			//log.Printf("CACHED !")
+			log.Printf("CACHED !")
 			res := &coap.Message{
 				Type:                coap.Acknowledgement,
 				Code:                coap.Content,
